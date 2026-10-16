@@ -1,0 +1,58 @@
+/**
+ * ============================================================================
+ * File: client/src/index.css
+ * 1. What this file does:
+ *    This is the main stylesheet. It sets up Tailwind CSS, clean background colors,
+ *    readable fonts, and fixes number alignment for prices.
+ * 2. Why this file exists:
+ *    Provides one place for global styling rules across all screens.
+ * 3. Important points to remember:
+ *    - @tailwind directives: Loads Tailwind's utility classes.
+ *    - .tabular-nums: Ensures numbers and prices in Rupees (₹) align neatly.
+ *    - Custom scrollbar: Gives a subtle, clean scrollbar instead of bulky defaults.
+ * 4. How it connects to other parts:
+ *    - Imported by 'main.jsx' and styles all components in the app.
+ * ============================================================================
+ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased min-h-screen selection:bg-indigo-100 selection:text-indigo-900;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* Smooth font rendering */
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Subtle, clean scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Tabular figures utility for currency numbers */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}

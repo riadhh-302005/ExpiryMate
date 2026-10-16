@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800" viewBox="0 0 600 800" fill="#ffffff">
+    <rect width="600" height="800" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+    <rect x="30" y="30" width="540" height="100" rx="8" fill="#4f46e5"/>
+    <text x="60" y="85" fill="#ffffff" font-family="Arial, sans-serif" font-size="28" font-weight="bold">CROMA RETAIL INVOICE</text>
+    <text x="60" y="112" fill="#e0e7ff" font-family="Arial, sans-serif" font-size="14">Authorized Electronics Partner — GSTIN: 27AABCT2345A1Z5</text>
+    <text x="50" y="180" fill="#334155" font-family="Arial, sans-serif" font-size="16" font-weight="bold">Customer: Aarav Sharma</text>
+    <text x="50" y="210" fill="#64748b" font-family="Arial, sans-serif" font-size="14">Invoice No: CR-MUM-2026-99214</text>
+    <text x="50" y="235" fill="#64748b" font-family="Arial, sans-serif" font-size="14">Store: Croma Mega Mall, Mumbai</text>
+    <line x1="50" y1="260" x2="550" y2="260" stroke="#e2e8f0" stroke-width="2"/>
+    <text x="50" y="300" fill="#1e293b" font-family="Arial, sans-serif" font-size="16">1. OnePlus 12 5G (16GB / 512GB Silky Black)</text>
+    <text x="450" y="300" fill="#1e293b" font-family="Arial, sans-serif" font-size="16" font-weight="bold">Rs. 64,999.00</text>
+    <text x="50" y="340" fill="#64748b" font-family="Arial, sans-serif" font-size="12">IMEI / Serial: 867392019482710 | Warranty: 1 Year Official</text>
+    <line x1="50" y1="380" x2="550" y2="380" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="350" y="420" fill="#475569" font-family="Arial, sans-serif" font-size="16">Subtotal:</text>
+    <text x="450" y="420" fill="#475569" font-family="Arial, sans-serif" font-size="16">Rs. 55,083.90</text>
+    <text x="350" y="450" fill="#475569" font-family="Arial, sans-serif" font-size="16">GST (18%):</text>
+    <text x="450" y="450" fill="#475569" font-family="Arial, sans-serif" font-size="16">Rs. 9,915.10</text>
+    <line x1="350" y1="470" x2="550" y2="470" stroke="#475569" stroke-width="1.5"/>
+    <text x="350" y="505" fill="#0f172a" font-family="Arial, sans-serif" font-size="20" font-weight="bold">TOTAL DUE:</text>
+    <text x="440" y="505" fill="#4f46e5" font-family="Arial, sans-serif" font-size="22" font-weight="bold">Rs. 64,999.00</text>
+    <rect x="50" y="550" width="500" height="90" rx="8" fill="#ecfdf5" stroke="#a7f3d0"/>
+    <text x="70" y="585" fill="#065f46" font-family="Arial, sans-serif" font-size="14" font-weight="bold">7-Day Hassle-Free Replacement Policy Active</text>
+    <text x="70" y="610" fill="#047857" font-family="Arial, sans-serif" font-size="12">Keep this invoice copy intact for OnePlus authorized service center warranty claims.</text>
+    <text x="210" y="740" fill="#94a3b8" font-family="Arial, sans-serif" font-size="12">Thank you for shopping with Croma!</text>
+  </svg>
