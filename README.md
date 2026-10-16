@@ -378,39 +378,4 @@ Open your browser to `http://localhost:5173`.
 
 ---
 
-## 15. Frequently Asked Interview Questions
 
-<details>
-<summary><strong>Q1: What is the difference between storing JWT in LocalStorage vs. an HTTP-only Cookie?</strong></summary>
-
-**Answer:** LocalStorage is accessible to any JavaScript running on the page, making it vulnerable to Cross-Site Scripting (XSS) attacks. An HTTP-only cookie cannot be read by client-side JavaScript, preventing script injection from stealing the token. To protect against Cross-Site Request Forgery (CSRF) when using cookies, appropriate `SameSite` flags (`SameSite=Lax` or `Strict`) and CORS credentials restrictions are applied.
-</details>
-
-<details>
-<summary><strong>Q2: Why did you compute days remaining dynamically instead of storing a countdown in MongoDB?</strong></summary>
-
-**Answer:** A countdown is a time-dependent value that changes every 24 hours. If we stored an integer like `daysRemaining: 10`, that integer would become outdated the very next day unless an expensive batch database update ran on every document every night. Storing immutable target dates (`warrantyEndDate`) and calculating remaining days at query time ensures 100% accuracy with zero write overhead.
-</details>
-
-<details>
-<summary><strong>Q3: How do you prevent User A from accessing User B's purchases?</strong></summary>
-
-**Answer:** We enforce user data isolation at both the database query level and the controller authorization level. In `getPurchases`, we query `Purchase.find({ user: req.user._id })`. For single-item endpoints (`getById`, `update`, `delete`), we verify `purchase.user.toString() === req.user._id.toString()`. If they do not match, we immediately return `403 Forbidden`. The `req.user` object is derived strictly from the verified JWT, never from user-supplied request parameters.
-</details>
-
-<details>
-<summary><strong>Q4: How does Multer handle file uploads, and why did you choose memoryStorage over diskStorage?</strong></summary>
-
-**Answer:** Multer parses `multipart/form-data` request payloads. With `memoryStorage()`, the uploaded file is held in a temporary memory Buffer (`req.file.buffer`). This is ideal for cloud uploads because we can stream the buffer directly to Cloudinary without writing temporary files to server disk. In our project, if Cloudinary credentials are absent, we cleanly write the buffer to a local `/uploads` directory as a developer fallback.
-</details>
-
-<details>
-<summary><strong>Q5: What happens if Cloudinary upload fails mid-request?</strong></summary>
-
-**Answer:** In `purchaseController.js`, the file upload step executes before saving the purchase document in MongoDB. If the upload stream throws an error, the controller catches the error and rejects the request with a `400/500` status. This prevents the database from storing invalid purchase documents with broken receipt URLs.
-</details>
-
----
-
-## License
-MIT License. Built for learning and interview preparation.
