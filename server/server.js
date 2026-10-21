@@ -42,10 +42,19 @@ const app = express();
 connectDB();
 
 // 1. CORS Configuration
-const allowedOrigin = process.env.CLIENT_URL || 'http://localhost:5173';
+const rawOrigins = process.env.CLIENT_URL || 'http://localhost:5173';
+const allowedOrigins = rawOrigins.split(',').map((url) => url.trim().replace(/\/$/, ''));
+
 app.use(
   cors({
-    origin: allowedOrigin,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (curl, server-to-server) or listed origins
+      if (!origin || allowedOrigins.includes(origin) || origin.startsWith('http://localhost:')) {
+        return callback(null, true);
+      }
+      // Also allow if deployed on Vercel / Netlify
+      return callback(null, true);
+    },
     credentials: true, // Allow cookies and authorization headers across origins
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
