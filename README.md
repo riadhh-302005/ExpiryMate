@@ -1,67 +1,121 @@
-# ExpiryMate — Receipt & Warranty Tracker
+# 🛡️ ExpiryMate — Full-Stack Receipt & Warranty Tracker
 
-> **A clean, beginner-friendly, full-stack MERN web application to store purchase receipts, track return deadlines and warranty expirations in real time, view expense analytics, and receive automated email reminders.**
+<div align="center">
 
----
+![ExpiryMate Banner](https://img.shields.io/badge/ExpiryMate-Receipt_%26_Warranty_Tracker-4f46e5?style=for-the-badge&logo=shield&logoColor=white)
 
-## Table of Contents
-1. [Project Overview](#project-overview)
-2. [Key Features](#key-features)
-3. [Technology Stack](#technology-stack)
-4. [Folder Structure](#folder-structure)
-5. [Prerequisites & Environment Configuration](#prerequisites--environment-configuration)
-6. [Installation & Setup](#installation--setup)
-7. [Running the Application](#running-the-application)
-8. [Configuring Cloudinary Storage](#configuring-cloudinary-storage)
-9. [Configuring Email Reminders](#configuring-email-reminders)
-10. [REST API Endpoints](#rest-api-endpoints)
-11. [Important Implementation Decisions](#important-implementation-decisions)
-12. [Known Limitations](#known-limitations)
-13. [Deployment Considerations](#deployment-considerations)
-14. [IMPORTANT POINTS TO REMEMBER (Interview Revision)](#important-points-to-remember-interview-revision)
-15. [Frequently Asked Interview Questions](#frequently-asked-interview-questions)
+[![Live Demo](https://img.shields.io/badge/Demo-expiry--mate--snowy.vercel.app-10b981?style=for-the-badge&logo=vercel&logoColor=white)](https://expiry-mate-snowy.vercel.app)
+[![API Status](https://img.shields.io/badge/Backend-Render.com-46E3B7?style=for-the-badge&logo=render&logoColor=black)](https://expirymate-0xvs.onrender.com)
+[![GitHub Repo](https://img.shields.io/badge/GitHub-riadhh--302005%2FExpiryMate-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/riadhh-302005/ExpiryMate)
 
----
+![React](https://img.shields.io/badge/React_18-20232A?style=flat-square&logo=react&logoColor=61DAFB)
+![Vite](https://img.shields.io/badge/Vite-646CFF?style=flat-square&logo=vite&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-339933?style=flat-square&logo=nodedotjs&logoColor=white)
+![Express.js](https://img.shields.io/badge/Express.js-000000?style=flat-square&logo=express&logoColor=white)
+![MongoDB Atlas](https://img.shields.io/badge/MongoDB_Atlas-47A248?style=flat-square&logo=mongodb&logoColor=white)
+![Cloudinary](https://img.shields.io/badge/Cloudinary-3448C5?style=flat-square&logo=cloudinary&logoColor=white)
 
-## 1. Project Overview
+**A modern, production-deployed MERN application that stores purchase receipts, tracks return deadlines and warranty expirations with live countdowns, visualizes expenses in Indian Rupees (₹), and sends automated email reminders.**
 
-**ExpiryMate** is a full-stack SaaS-style application built with the MERN stack (MongoDB, Express.js, React, Node.js). 
+[Explore Live Demo](https://expiry-mate-snowy.vercel.app) · [Report Bug](https://github.com/riadhh-302005/ExpiryMate/issues) · [Request Feature](https://github.com/riadhh-302005/ExpiryMate/issues)
 
-Consumers often purchase items, misplace their receipts, and lose hundreds of dollars when an item breaks right after the return window closes or just before a warranty expires. ExpiryMate solves this problem by:
-- Storing receipts securely in the cloud (Cloudinary) with automatic local fallback storage in development.
-- Calculating dynamic countdowns to return deadlines and warranty expiration dates.
-- Displaying actionable status badges ("Return window open", "Deadline approaching", "Warranty active", "Warranty expired").
-- Visualizing spending habits across categories and months with interactive Recharts.
-- Scheduling automated daily email reminders using `node-cron` and `Nodemailer` with deduplication flags to prevent spam.
-- Offering client-side OCR (Optical Character Recognition via Tesseract.js) to extract prices, dates, and store names from receipt photos.
+</div>
 
 ---
 
-## 2. Key Features
-
-- **Secure JWT Authentication**: User registration and login with bcryptjs password hashing and dual HTTP-only cookie + Bearer token support.
-- **Purchase & Receipt Management (CRUD)**: Create, view, edit, and delete purchases with receipt image or PDF attachments.
-- **Live Deadline Calculations**: Dynamic days-remaining calculations (no outdated static countdown counters in the database).
-- **Multi-Filter & Search Engine**: Live search by product name or seller, category filters, warranty status filter, and multi-field sorting.
-- **Analytics Dashboard**: Total spend, registered purchases count, active warranties count, impending return alerts, monthly expense bar chart, and category spending donut chart.
-- **Automated Email Reminders**: Scheduled daily cron job checking for upcoming return deadlines (≤ 3 days) and expiring warranties (≤ 30 days) with deduplication state.
-- **Optional Receipt OCR**: Browser-based Tesseract.js scanner extracting merchant name, purchase date, and total price with user confirmation before applying.
-- **Cloudinary Storage & Asset Cleanup**: Uploads receipts to Cloudinary and deletes cloud assets when purchase records are deleted.
-- **Development-Friendly Fallbacks**: Runs seamlessly without requiring external Cloudinary or SMTP accounts.
+## 📌 Table of Contents
+1. [The Problem & Solution](#-the-problem--solution)
+2. [Key Features](#-key-features)
+3. [System Architecture](#-system-architecture)
+4. [Tech Stack](#-tech-stack)
+5. [Live Links & Demo Account](#-live-links--demo-account)
+6. [Local Installation & Setup](#-local-installation--setup)
+7. [Environment Variables](#-environment-variables)
+8. [Sample Test Data & Receipts](#-sample-test-data--receipts)
+9. [REST API Documentation](#-rest-api-documentation)
+10. [Key Engineering & Architecture Decisions](#-key-engineering--architecture-decisions)
+11. [Interview Revision Cheat Sheet](#-interview-revision-cheat-sheet)
 
 ---
 
-## 3. Technology Stack
+## 💡 The Problem & Solution
+
+Every year, consumers lose thousands of rupees because they:
+- **Misplace paper receipts** or delete confirmation emails.
+- **Forget return deadlines** (usually only 7–14 days) and get stuck with items they don't want.
+- **Let manufacturer warranties lapse** right before a gadget breaks, paying out-of-pocket for costly repairs.
+
+**ExpiryMate** solves this with a centralized, automated digital filing system that:
+1. Backs up physical receipt photos or PDF invoices to Cloudinary.
+2. Calculates dynamic, real-time countdown badges (e.g., `Return window open (3d left)`, `Warranty active (360d)`).
+3. Automatically scans for impending deadlines every morning at 08:00 AM and emails users before it's too late.
+4. Provides in-browser OCR (Optical Character Recognition) to extract store names, bill totals, and dates from receipts without manual typing.
+
+---
+
+## ✨ Key Features
+
+- **🔐 Secure JWT Authentication**: User signup and login with `bcryptjs` password hashing and secure HTTP-only cookies (`SameSite: None`, `Secure`).
+- **🧾 Complete Purchase Management (CRUD)**: Create, view, edit, and delete purchases with receipt image or PDF attachments (up to 5MB).
+- **⏱️ Live Dynamic Countdowns**: Real-time remaining day math calculated on the fly without storing stale countdown numbers in MongoDB.
+- **🔍 Multi-Criteria Search & Filtering**: Live search by product name or store, category dropdown, warranty status filter, and sort by price, date, or expiry.
+- **📊 Financial Analytics Dashboard**: Built with **Recharts** to visualize 6-month spending trends and category proportions in Indian Rupees (`₹`).
+- **🔔 Automated Cron Email Alerts**: Scheduled `node-cron` background worker executing daily at 08:00 AM with Nodemailer and duplicate alert prevention.
+- **👁️ In-Browser OCR Scanner**: Powered by **Tesseract.js** to read text from receipt photos on the client side without paid external AI API keys.
+- **☁️ Cloud Media Storage & Auto-Cleanup**: Streams uploads to Cloudinary and automatically deletes cloud assets when items are deleted.
+
+---
+
+## 🏗️ System Architecture
+
+```mermaid
+flowchart TD
+    subgraph Client["Frontend — React 18 + Vite (Vercel)"]
+        UI["Dashboard & Purchases UI"]
+        OCR["Tesseract.js OCR Engine"]
+        Recharts["Monthly & Category Spending Charts"]
+        AuthContext["Auth Context & HTTP-Only Cookie Handler"]
+    end
+
+    subgraph Server["Backend — Node.js & Express (Render)"]
+        Router["Express REST API Router"]
+        AuthMid["JWT Auth Middleware"]
+        MulterMid["Multer Memory Buffer (≤5MB)"]
+        DateCalc["Dynamic Countdown Utility"]
+        CronJob["node-cron Scheduler (08:00 AM)"]
+    end
+
+    subgraph CloudServices["Cloud & Data Services"]
+        MongoDB[(MongoDB Atlas)]
+        Cloudinary[(Cloudinary Media CDN)]
+        GmailSMTP[Gmail SMTP Engine]
+    end
+
+    UI -->|Axios REST Requests| Router
+    OCR -->|Prefill Form Fields| UI
+    Router --> AuthMid
+    AuthMid --> Router
+    Router --> MulterMid
+    MulterMid -->|Stream Images / PDFs| Cloudinary
+    Router -->|Read / Write Documents| MongoDB
+    CronJob -->|Check Expiring Items| DateCalc
+    CronJob -->|Send HTML Alerts| GmailSMTP
+    GmailSMTP -->|Inbox Delivery| UserInbox([User Inbox])
+```
+
+---
+
+## 🛠️ Tech Stack
 
 ### Frontend
-- **Framework**: React 18+ bootstrapped with [Vite](https://vitejs.dev/)
-- **Language**: JavaScript (ES6+)
-- **Routing**: React Router DOM (v6/v7)
-- **HTTP Client**: Axios with interceptors and cookie credentials
+- **Library/Bundler**: React 18 with [Vite](https://vitejs.dev/)
+- **Routing**: React Router DOM (v6)
 - **Styling**: Tailwind CSS
 - **Icons**: Lucide React
-- **Data Visualization**: Recharts (PieChart and BarChart)
-- **OCR Engine**: Tesseract.js
+- **Charts**: Recharts (Responsive BarChart & Donut PieChart)
+- **OCR Engine**: Tesseract.js (Client-side WebAssembly)
+- **HTTP Client**: Axios with `withCredentials: true`
 
 ### Backend
 - **Runtime**: Node.js
@@ -71,214 +125,186 @@ Consumers often purchase items, misplace their receipts, and lose hundreds of do
 - **File Uploads**: Multer with memory storage
 - **Cloud Storage**: Cloudinary SDK (with local disk fallback)
 - **Job Scheduler**: `node-cron`
-- **Email Delivery**: Nodemailer (with console preview dev mode)
-- **Security & Config**: `dotenv`, `cors`, `cookie-parser`
+- **Email Delivery**: Nodemailer via Gmail SMTP
+
+### Cloud & Deployment
+- **Frontend Hosting**: Vercel
+- **Backend Hosting**: Render.com Web Service
+- **Database Hosting**: MongoDB Atlas (Free M0 Cluster)
+- **Media Hosting**: Cloudinary
 
 ---
 
-## 4. Folder Structure
+## 🌐 Live Links & Demo Account
 
-```
-ExpiryMate/
-├── client/                     # Frontend React (Vite) application
-│   ├── public/                 # Static assets & favicon
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── common/         # Reusable UI: Navbar, Sidebar, StatCard, Badge, ConfirmModal, ReceiptModal
-│   │   │   ├── purchases/      # PurchaseCard, PurchaseFilters, OcrScanner
-│   │   │   └── charts/         # CategorySpendingChart, MonthlySpendingChart
-│   │   ├── context/            # AuthContext.jsx (global auth state)
-│   │   ├── pages/              # 9 dedicated pages (Dashboard, Purchases, Add, Edit, Details, Deadlines, Profile, Login, Register)
-│   │   ├── services/           # Axios network services (api.js, authService.js, purchaseService.js, dashboardService.js)
-│   │   ├── utils/              # Date countdown calculations and formatters
-│   │   ├── App.jsx             # Main routing skeleton and protected route guards
-│   │   ├── main.jsx            # Application DOM root mount
-│   │   └── index.css           # Tailwind CSS directives
-│   ├── index.html              # HTML template
-│   ├── vite.config.js          # Vite config with API proxy
-│   ├── tailwind.config.js      # Tailwind design tokens
-│   ├── postcss.config.js       # PostCSS processor config
-│   ├── package.json            # Client dependencies
-│   └── .env.example            # Client environment variables
-│
-├── server/                     # Backend Node.js / Express application
-│   ├── config/
-│   │   ├── db.js               # Mongoose MongoDB connection
-│   │   └── cloudinary.js       # Cloudinary SDK configuration
-│   ├── controllers/
-│   │   ├── authController.js   # User registration, login, logout, me
-│   │   ├── purchaseController.js # Purchase CRUD and receipt uploads
-│   │   └── dashboardController.js# Analytics metrics & upcoming deadlines
-│   ├── middleware/
-│   │   ├── authMiddleware.js   # JWT token verification (cookie & header)
-│   │   ├── uploadMiddleware.js # Multer file validation and storage
-│   │   └── errorMiddleware.js  # Centralized 404 & error handlers
-│   ├── models/
-│   │   ├── User.js             # Mongoose schema for user accounts
-│   │   └── Purchase.js         # Mongoose schema for purchases & reminders
-│   ├── routes/
-│   │   ├── authRoutes.js       # /api/auth endpoints
-│   │   ├── purchaseRoutes.js   # /api/purchases endpoints
-│   │   └── dashboardRoutes.js  # /api/dashboard endpoints
-│   ├── utils/
-│   │   ├── dateCalculations.js # Dynamic countdown math & status labels
-│   │   └── emailService.js     # Nodemailer transport & HTML alerts
-│   ├── jobs/
-│   │   └── reminderJob.js      # Daily node-cron scheduled reminder task
-│   ├── uploads/                # Local storage fallback directory
-│   ├── server.js               # Express application entry point
-│   ├── package.json            # Server dependencies
-│   └── .env.example            # Server environment variables
-│
-└── README.md                   # Comprehensive documentation and study guide
-```
+| Component | URL |
+| :--- | :--- |
+| **Live Web App** | **[https://expiry-mate-snowy.vercel.app](https://expiry-mate-snowy.vercel.app)** |
+| **Live Backend API** | **[https://expirymate-0xvs.onrender.com](https://expirymate-0xvs.onrender.com)** |
+| **GitHub Repository** | **[https://github.com/riadhh-302005/ExpiryMate](https://github.com/riadhh-302005/ExpiryMate)** |
+
+> **Pre-loaded Demo Account (if seeded)**:  
+> **Email**: `aarav.sharma@example.com`  
+> **Password**: `password123`  
+> *(Or click "Create an account" to register your own isolated account in seconds).*
 
 ---
 
-## 5. Prerequisites & Environment Configuration
+## 💻 Local Installation & Setup
 
 ### Prerequisites
-- **Node.js**: v18.0.0 or higher
-- **MongoDB**: Local MongoDB server running on port `27017` (e.g. `mongodb://localhost:27017/expirymate`) or a free [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) cluster URI.
+- [Node.js](https://nodejs.org/) v18.0.0 or higher
+- [MongoDB](https://www.mongodb.com/) running locally or a MongoDB Atlas URI
 
-### Environment Files
+### 1. Clone the repository
+```bash
+git clone https://github.com/riadhh-302005/ExpiryMate.git
+cd ExpiryMate
+```
 
-#### Backend (`server/.env`)
-Copy `server/.env.example` to `server/.env`:
+### 2. Setup the Backend
+```bash
+cd server
+npm install
+cp .env.example .env
+```
+*(Fill in your values in `server/.env` — see [Environment Variables](#-environment-variables) below).*
+
+Start the backend:
+```bash
+npm start
+# Server running on http://localhost:5000
+```
+
+### 3. Setup the Frontend
+Open a new terminal:
+```bash
+cd client
+npm install
+cp .env.example .env
+npm run dev
+# Frontend running on http://localhost:5173
+```
+
+### 4. (Optional) 1-Click Database Seeding
+To populate 5 realistic test purchases covering every warranty and return state:
+```bash
+cd server
+npm run seed
+```
+
+---
+
+## ⚙️ Environment Variables
+
+### Backend (`server/.env`)
 ```env
 PORT=5000
-MONGODB_URI=mongodb://localhost:27017/expirymate
+MONGODB_URI=mongodb+srv://<user>:<password>@cluster0.p8obqdy.mongodb.net/expirymate?retryWrites=true&w=majority
 JWT_SECRET=supersecret_jwt_key_change_in_production_12345
 CLIENT_URL=http://localhost:5173
 
-# Optional: Cloudinary (leave empty to use local /uploads storage in dev)
-CLOUDINARY_CLOUD_NAME=
-CLOUDINARY_API_KEY=
-CLOUDINARY_API_SECRET=
+# Cloudinary (Optional - saves to /uploads if blank)
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
 
-# Optional: Nodemailer (leave empty to use terminal console logger in dev)
+# Email Reminders (Optional - prints console preview in dev if blank)
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
-EMAIL_USER=
-EMAIL_PASSWORD=
-EMAIL_FROM="ExpiryMate Reminders" <no-reply@expirymate.local>
+EMAIL_USER=your_email@gmail.com
+EMAIL_PASSWORD=your_16_digit_google_app_password
+EMAIL_FROM="ExpiryMate Reminders" <your_email@gmail.com>
 ```
 
-#### Frontend (`client/.env`)
-Copy `client/.env.example` to `client/.env`:
+### Frontend (`client/.env`)
 ```env
+# Leave /api for local Vite proxy, or set to your Render backend URL in production
 VITE_API_BASE_URL=/api
 ```
 
 ---
 
-## 6. Installation & Setup
+## 🧾 Sample Test Data & Receipts
 
-1. **Clone or navigate to the repository:**
-   ```bash
-   cd ExpiryMate
-   ```
+The repository includes **5 ready-to-use high-resolution receipt images** inside the [`test-receipts/`](file:///C:/Users/riadh/.gemini/antigravity/scratch/ExpiryMate/test-receipts/) directory:
 
-2. **Install Server Dependencies:**
-   ```bash
-   cd server
-   npm install
-   ```
-
-3. **Install Client Dependencies:**
-   ```bash
-   cd ../client
-   npm install
-   ```
+| File Name | Merchant | Product | Price | Scenario Tested |
+| :--- | :--- | :--- | :--- | :--- |
+| `receipt-01-macbook-apple.png` | Apple Store BKC | MacBook Air M3 | ₹1,24,900.00 | Active 1-Year Warranty |
+| `receipt-02-zara-blazer.png` | Zara Palladium | Wool Tailored Blazer | ₹7,990.00 | Return Deadline Closing (≤3d) |
+| `receipt-03-samsung-tv.png` | Reliance Digital | Samsung 55" 4K UHD TV | ₹43,990.00 | Warranty Expiring Soon (≤30d) |
+| `receipt-04-prestige-cooktop.png` | Amazon Retail India | Prestige Induction Cooktop | ₹2,499.00 | Expired Warranty Record |
+| `receipt-05-oneplus12-croma.png` | Croma Mega Mall | OnePlus 12 5G | ₹64,999.00 | Seed Demo Invoice |
 
 ---
 
-## 7. Running the Application
-
-### Option 1: Running in Two Terminals (Recommended for Development)
-
-**Terminal 1 (Backend):**
-```bash
-cd server
-npm start
-# Server boots at http://localhost:5000
-```
-
-**Terminal 2 (Frontend):**
-```bash
-cd client
-npm run dev
-# Frontend boots at http://localhost:5173
-```
-
-Open your browser to `http://localhost:5173`.
-
----
-
-## 8. Configuring Cloudinary Storage
-
-1. Create a free account at [Cloudinary](https://cloudinary.com/).
-2. On your Cloudinary Dashboard, locate:
-   - **Cloud Name**
-   - **API Key**
-   - **API Secret**
-3. Open `server/.env` and fill in the values:
-   ```env
-   CLOUDINARY_CLOUD_NAME=your_cloud_name
-   CLOUDINARY_API_KEY=your_api_key
-   CLOUDINARY_API_SECRET=your_api_secret
-   ```
-4. Restart the server. Uploads will now be automatically streamed directly to Cloudinary folder `expirymate/receipts`.
-5. When a purchase is deleted, its Cloudinary asset is automatically removed using the stored `receiptPublicId`.
-
-> **Note for Beginners:** If these credentials are left blank, ExpiryMate continues working seamlessly by saving files to `server/uploads/`.
-
----
-
-## 9. Configuring Email Reminders
-
-1. By default, ExpiryMate operates in **Development Simulation Mode**: whenever the cron job triggers or you click "Test Email Reminders Now", a formatted preview of the email is printed directly to the server terminal console.
-2. To send live emails with Gmail:
-   - Go to your Google Account -> **Security** -> **2-Step Verification**.
-   - Create an **App Password** for "Mail".
-   - Put your credentials in `server/.env`:
-     ```env
-     EMAIL_HOST=smtp.gmail.com
-     EMAIL_PORT=587
-     EMAIL_USER=your_email@gmail.com
-     EMAIL_PASSWORD=your_16_digit_app_password
-     ```
-3. Restart the server. The daily cron job runs at **08:00 AM** (`0 8 * * *`). You can also trigger an immediate test run from the **Profile & Settings** page at `/profile`.
-
----
-
-## 10. REST API Endpoints
+## 📡 REST API Documentation
 
 ### Authentication (`/api/auth`)
 | Method | Endpoint | Description | Access |
-|---|---|---|---|
+| :--- | :--- | :--- | :--- |
 | `POST` | `/api/auth/register` | Register new user account | Public |
-| `POST` | `/api/auth/login` | Log in and receive HTTP-only cookie + token | Public |
-| `POST` | `/api/auth/logout` | Clear auth cookie | Public |
+| `POST` | `/api/auth/login` | Log in and receive HTTP-only cookie + JWT | Public |
+| `POST` | `/api/auth/logout` | Clear HTTP-only auth cookie | Public |
 | `GET` | `/api/auth/me` | Fetch authenticated user profile | Private |
 
 ### Purchases (`/api/purchases`)
 | Method | Endpoint | Description | Access |
-|---|---|---|---|
+| :--- | :--- | :--- | :--- |
 | `GET` | `/api/purchases` | Query purchases (search, category, status, sort) | Private |
 | `POST` | `/api/purchases` | Create new purchase with receipt file upload | Private |
 | `GET` | `/api/purchases/:id` | Get purchase by ID with dynamic countdown data | Private |
 | `PUT` | `/api/purchases/:id` | Update purchase details / replace receipt | Private |
 | `DELETE`| `/api/purchases/:id` | Delete purchase & clean up Cloudinary asset | Private |
 
-### Dashboard (`/api/dashboard`)
+### Dashboard & Analytics (`/api/dashboard`)
 | Method | Endpoint | Description | Access |
-|---|---|---|---|
-| `GET` | `/api/dashboard/stats` | Aggregate spending, category, and monthly stats | Private |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/dashboard/stats` | Aggregate spending totals, category, & 6-month trends | Private |
 | `GET` | `/api/dashboard/upcoming`| Fetch return & warranty deadlines ordered by urgency | Private |
-| `POST`| `/api/dashboard/trigger-reminders` | Manually run reminder scan (testing endpoint) | Private |
+| `POST`| `/api/dashboard/trigger-reminders`| Manually run reminder scan (on-demand test) | Private |
 
 ---
 
+## 🧠 Key Engineering & Architecture Decisions
 
+1. **Dynamic Countdown Calculation vs. Database Counters**:
+   * *Decision*: Remaining days and status badges are computed on the fly on every request (`server/utils/dateCalculations.js`).
+   * *Why*: Storing a static countdown like `daysLeft: 5` in MongoDB causes data to become stale within 24 hours unless a daily batch update mutates every document. Computing relative to `Date.now()` guarantees 100% accuracy without database write overhead.
 
+2. **HTTP-Only Cookies with Fallback Token Header**:
+   * *Decision*: The backend sets `res.cookie('token', ... { httpOnly: true, secure: true, sameSite: 'none' })` and also returns the token in JSON.
+   * *Why*: HTTP-only cookies cannot be read by malicious JavaScript (`document.cookie`), shielding users from Cross-Site Scripting (XSS) token theft.
+
+3. **Client-Side OCR (Tesseract.js) vs. Cloud OCR API**:
+   * *Decision*: Ran OCR directly in the browser using WebAssembly.
+   * *Why*: Keeps the project 100% free for students, requires zero third-party API billing, and preserves user privacy by keeping unprocessed images local until the user explicitly saves.
+
+4. **Multer Memory Storage for Stream Uploads**:
+   * *Decision*: Process files directly in memory buffer (`multer.memoryStorage()`) rather than saving temporary files to disk before uploading to Cloudinary.
+   * *Why*: Serverless and cloud hosts (like Render free containers) have ephemeral filesystems where disk writes can lead to storage leaks or failures.
+
+---
+
+## 🎯 Interview Revision Cheat Sheet
+
+* **Q: How does user data isolation work in ExpiryMate?**  
+  *A: The JWT middleware extracts `req.user.id` from the verified token. In every controller query, we enforce `{ _id: purchaseId, user: req.user.id }`. Even if an attacker guesses another user's purchase ID, the database query returns `null` or 404, preventing IDOR (Insecure Direct Object Reference) vulnerabilities.*
+
+* **Q: How do you prevent duplicate emails from being sent every day?**  
+  *A: The `Purchase` model contains a `remindersSent: { returnDeadline: Boolean, warrantyExpiry: Boolean }` subdocument. Once an email is dispatched, the flag is flipped to `true`. Even if the cron job runs again, already-notified items are excluded from the query.*
+
+* **Q: Why use Recharts instead of Chart.js?**  
+  *A: Recharts is built specifically for React with declarative SVG components (`<BarChart>`, `<PieChart>`, `<Tooltip>`). It fits naturally into the React render lifecycle and scales crisply across mobile and desktop displays without canvas pixelation.*
+
+* **Q: How does CORS work between Vercel and Render?**  
+  *A: Since the frontend is on `vercel.app` and backend is on `onrender.com`, they are different origins. We configured Express `cors()` with `credentials: true` and dynamically reflected the requesting origin so that cross-origin cookies can be received and set securely.*
+
+---
+
+## 📄 License & Author
+
+Built with ❤️ by **[riadhh-302005](https://github.com/riadhh-302005)** as a full-stack engineering portfolio project.
+
+Licensed under the [MIT License](LICENSE).
