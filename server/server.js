@@ -69,8 +69,8 @@ app.use(cookieParser());
 // 3. Serve local uploaded receipt files (for dev fallback when Cloudinary is not configured)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// 4. Health check endpoint
-app.get('/api/health', (req, res) => {
+// 4. Root & Health check endpoints (Returns 200 OK for uptime pingers, cron-job.org, and browsers)
+app.get(['/', '/health', '/api/health'], (req, res) => {
   res.status(200).json({
     success: true,
     message: 'ExpiryMate API is running smoothly',
