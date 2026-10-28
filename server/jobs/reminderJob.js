@@ -9,8 +9,8 @@
 // 3. Important points to remember:
 //    - initReminderJob(): Schedules the task to run automatically every morning at 8:00 AM.
 //    - checkAndSendReminders(): Finds matching items in MongoDB and sends emails.
-//    - Prevents duplicate spam: Marks 'remindersSent: true' after sending so users
-//      only get notified once per deadline.
+//    - Prevents duplicate spam: Only marks 'remindersSent: true' when email is successfully delivered.
+//      If delivery fails, it leaves the flag false so it can be retried once fixed.
 // 4. How it connects to other parts:
 //    - Started by 'server.js' when the server boots.
 //    - Uses 'utils/emailService.js' to deliver the emails.
@@ -28,13 +28,14 @@ const {
 /**
  * Scans the database and sends reminder emails for imminent deadlines.
  * Avoids duplicate emails by checking remindersSent flags.
- * @returns {Promise<{ returnRemindersSent: number, warrantyRemindersSent: number }>}
+ * @returns {Promise<{ returnRemindersSent: number, warrantyRemindersSent: number, error?: string }>}
  */
 const checkAndSendReminders = async () => {
   console.log('[ReminderJob] Starting scheduled check for upcoming deadlines...');
 
   let returnRemindersSent = 0;
   let warrantyRemindersSent = 0;
+  let lastDeliveryError = null;
 
   try {
     const now = new Date();
@@ -57,12 +58,17 @@ const checkAndSendReminders = async () => {
           `[ReminderJob] Sending return deadline reminder for "${purchase.productName}" to ${purchase.user.email} (${daysLeft}d left)`
         );
 
-        await sendReturnDeadlineReminder(purchase.user, purchase, daysLeft);
+        const sendRes = await sendReturnDeadlineReminder(purchase.user, purchase, daysLeft);
 
-        // Mark flag to prevent duplicate reminder
-        purchase.remindersSent.returnDeadline = true;
-        await purchase.save();
-        returnRemindersSent++;
+        if (sendRes && sendRes.success) {
+          // Mark flag only on successful delivery to prevent duplicate reminder
+          purchase.remindersSent.returnDeadline = true;
+          await purchase.save();
+          returnRemindersSent++;
+        } else {
+          lastDeliveryError = sendRes?.error || 'Failed to deliver return alert';
+          console.error(`[ReminderJob] Delivery failed for "${purchase.productName}": ${lastDeliveryError}`);
+        }
       }
     }
 
@@ -84,12 +90,17 @@ const checkAndSendReminders = async () => {
           `[ReminderJob] Sending warranty expiry reminder for "${purchase.productName}" to ${purchase.user.email} (${daysLeft}d left)`
         );
 
-        await sendWarrantyExpiryReminder(purchase.user, purchase, daysLeft);
+        const sendRes = await sendWarrantyExpiryReminder(purchase.user, purchase, daysLeft);
 
-        // Mark flag to prevent duplicate reminder
-        purchase.remindersSent.warrantyExpiry = true;
-        await purchase.save();
-        warrantyRemindersSent++;
+        if (sendRes && sendRes.success) {
+          // Mark flag only on successful delivery to prevent duplicate reminder
+          purchase.remindersSent.warrantyExpiry = true;
+          await purchase.save();
+          warrantyRemindersSent++;
+        } else {
+          lastDeliveryError = sendRes?.error || 'Failed to deliver warranty alert';
+          console.error(`[ReminderJob] Delivery failed for "${purchase.productName}": ${lastDeliveryError}`);
+        }
       }
     }
 
@@ -100,12 +111,15 @@ const checkAndSendReminders = async () => {
     return {
       success: true,
       returnRemindersSent,
-      warrantyRemindersSent
+      warrantyRemindersSent,
+      error: lastDeliveryError
     };
   } catch (error) {
     console.error(`[ReminderJob] Error executing reminder job: ${error.message}`);
     return {
       success: false,
+      returnRemindersSent: 0,
+      warrantyRemindersSent: 0,
       error: error.message
     };
   }

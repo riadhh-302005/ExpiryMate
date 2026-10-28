@@ -2,17 +2,19 @@
 // File: server/utils/emailService.js
 // 1. What this file does:
 //    Sends email notifications to users using Nodemailer when their return deadlines
-//    or warranties are expiring soon.
+//    or warranties are expiring soon, or when testing email delivery on demand.
 // 2. Why this file exists:
 //    Keeps all email templates and sending logic in one place, away from database code.
 // 3. Important points to remember:
 //    - If Gmail credentials are in .env, sends real HTML emails to the user's inbox.
 //    - If credentials are not set, it runs in "Dev Simulation Mode" and prints the
 //      email preview to the terminal so developers can test without setup.
+//    - Automatically strips spaces from Google App Passwords and sets connection timeouts.
 //    - sendReturnDeadlineReminder: Formats and sends a return alert.
 //    - sendWarrantyExpiryReminder: Formats and sends a warranty alert.
+//    - sendTestVerificationEmail: Sends an immediate on-demand verification email.
 // 4. How it connects to other parts:
-//    - Called by 'jobs/reminderJob.js' (the daily reminder check).
+//    - Called by 'jobs/reminderJob.js' and 'controllers/dashboardController.js'.
 // ============================================================================
 
 const nodemailer = require('nodemailer');
@@ -21,19 +23,26 @@ const isEmailConfigured = () => {
   return Boolean(process.env.EMAIL_USER && process.env.EMAIL_PASSWORD);
 };
 
-// Create Nodemailer transporter if credentials are present
-let transporter = null;
-if (isEmailConfigured()) {
-  transporter = nodemailer.createTransport({
+// Returns a configured Nodemailer transporter with connection timeouts
+const getTransporter = () => {
+  if (!isEmailConfigured()) return null;
+
+  const rawPassword = process.env.EMAIL_PASSWORD || '';
+  const cleanPassword = rawPassword.replace(/\s+/g, ''); // strip spaces from App Password
+
+  return nodemailer.createTransport({
     host: process.env.EMAIL_HOST || 'smtp.gmail.com',
     port: Number(process.env.EMAIL_PORT) || 587,
-    secure: false, // true for 465, false for 587
+    secure: Number(process.env.EMAIL_PORT) === 465,
     auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASSWORD
-    }
+      user: (process.env.EMAIL_USER || '').trim(),
+      pass: cleanPassword
+    },
+    connectionTimeout: 10000, // 10 second timeout
+    greetingTimeout: 10000,
+    socketTimeout: 15000
   });
-}
+};
 
 /**
  * Sends an email or prints to console in development mode.
@@ -42,6 +51,7 @@ if (isEmailConfigured()) {
  */
 const sendMail = async ({ to, subject, html }) => {
   const from = process.env.EMAIL_FROM || '"ExpiryMate Reminders" <no-reply@expirymate.local>';
+  const transporter = getTransporter();
 
   if (!isEmailConfigured() || !transporter) {
     console.log('\n======================================================');
@@ -139,8 +149,43 @@ const sendWarrantyExpiryReminder = async (user, purchase, daysRemaining) => {
   return sendMail({ to: user.email, subject, html });
 };
 
+/**
+ * Sends an immediate on-demand test verification email to confirm SMTP connectivity.
+ */
+const sendTestVerificationEmail = async (user) => {
+  const subject = `✅ ExpiryMate: Your Email Alerts are Connected & Working!`;
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 8px;">
+      <h2 style="color: #1e293b; margin-top: 0;">🎉 ExpiryMate Email Verification</h2>
+      <p style="color: #475569; font-size: 16px;">Hi <strong>${user.name}</strong>,</p>
+      <p style="color: #475569; font-size: 16px;">
+        Great news! Your ExpiryMate email alert system is <strong>100% connected and verified</strong>.
+      </p>
+
+      <div style="background-color: #f0fdf4; border-left: 4px solid #16a34a; padding: 16px; margin: 20px 0; border-radius: 4px;">
+        <p style="margin: 4px 0; color: #166534; font-weight: bold;">Notification Rules Active:</p>
+        <p style="margin: 4px 0; color: #15803d;">• <strong>Return Deadlines:</strong> Dispatched 3 days before any return window closes.</p>
+        <p style="margin: 4px 0; color: #15803d;">• <strong>Warranty Expiry:</strong> Dispatched 30 days before manufacturer warranty ends.</p>
+        <p style="margin: 4px 0; color: #15803d;">• <strong>Daily Schedule:</strong> Automated check runs every morning at 08:00 AM.</p>
+      </div>
+
+      <p style="color: #64748b; font-size: 14px;">
+        You can now track your purchases with complete peace of mind. Whenever an item reaches its critical window, you will receive an alert like this one!
+      </p>
+      <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
+      <p style="color: #94a3b8; font-size: 12px; margin-bottom: 0;">
+        ExpiryMate — Receipt, Warranty & Return Deadline Tracker
+      </p>
+    </div>
+  `;
+
+  return sendMail({ to: user.email, subject, html });
+};
+
 module.exports = {
   sendReturnDeadlineReminder,
   sendWarrantyExpiryReminder,
+  sendTestVerificationEmail,
   isEmailConfigured
 };

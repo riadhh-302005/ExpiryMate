@@ -10,7 +10,7 @@
 //    - getDashboardStats: Adds up spending and groups purchases by month and category.
 //    - getUpcomingDeadlines: Finds returns ending in <= 14 days and warranties in <= 60 days.
 //    - triggerRemindersManually: Lets users or testers trigger the reminder check
-//      immediately from the Profile page without waiting for the daily cron timer.
+//      immediately from the Profile page, sending real alert or verification emails.
 // 4. How it connects to other parts:
 //    - Called by 'routes/dashboardRoutes.js'.
 //    - Fetches data from 'models/Purchase.js'.
@@ -19,6 +19,7 @@
 const Purchase = require('../models/Purchase');
 const { attachDynamicStatus, calculateDaysRemaining } = require('../utils/dateCalculations');
 const { checkAndSendReminders } = require('../jobs/reminderJob');
+const { sendTestVerificationEmail } = require('../utils/emailService');
 
 /**
  * @route   GET /api/dashboard/stats
@@ -29,83 +30,88 @@ const getDashboardStats = async (req, res, next) => {
   try {
     const userId = req.user._id;
 
-    // Fetch all user purchases
+    // Fetch all user purchases sorted by purchaseDate descending
     const purchases = await Purchase.find({ user: userId }).sort({ purchaseDate: -1 });
 
-    const totalPurchases = purchases.length;
-    let totalSpending = 0;
+    let totalSpend = 0;
     let activeWarranties = 0;
-    let expiringWarranties = 0;
-    let upcomingReturns = 0;
+    let expiringSoonCount = 0; // <= 30 days
+    let upcomingReturnsCount = 0; // <= 7 days
 
     const categoryMap = {};
     const monthlyMap = {};
 
-    // Generate month keys for last 6 months so charts show a complete timeline
+    // Initialize 6 past calendar months with 0 amount
     const now = new Date();
     for (let i = 5; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const monthKey = d.toLocaleString('en-US', { month: 'short', year: 'numeric' });
-      monthlyMap[monthKey] = 0;
+      const key = d.toLocaleString('en-US', { month: 'short', year: 'numeric' });
+      monthlyMap[key] = 0;
     }
 
     purchases.forEach((p) => {
-      totalSpending += p.price;
+      totalSpend += p.price || 0;
 
-      // Category breakdown
-      categoryMap[p.category] = (categoryMap[p.category] || 0) + p.price;
+      const enriched = attachDynamicStatus(p);
 
-      // Monthly spending breakdown
+      // Count active and expiring warranties
+      if (
+        enriched.warrantyStatus.status === 'active' ||
+        enriched.warrantyStatus.status === 'expiring_soon'
+      ) {
+        activeWarranties++;
+        if (enriched.warrantyStatus.status === 'expiring_soon') {
+          expiringSoonCount++;
+        }
+      }
+
+      // Count return windows closing soon (<= 7 days and open)
+      if (
+        enriched.returnStatus.status === 'approaching' ||
+        (enriched.returnStatus.status === 'open' &&
+          enriched.returnStatus.daysRemaining !== null &&
+          enriched.returnStatus.daysRemaining <= 7)
+      ) {
+        upcomingReturnsCount++;
+      }
+
+      // Aggregate category spending
+      const cat = p.category || 'Other';
+      categoryMap[cat] = (categoryMap[cat] || 0) + (p.price || 0);
+
+      // Aggregate monthly spending (using purchaseDate)
       const pDate = new Date(p.purchaseDate);
       const monthKey = pDate.toLocaleString('en-US', { month: 'short', year: 'numeric' });
       if (monthlyMap[monthKey] !== undefined) {
-        monthlyMap[monthKey] += p.price;
-      }
-
-      // Dynamic deadline checks
-      const returnDays = calculateDaysRemaining(p.returnDeadline);
-      if (returnDays !== null && returnDays >= 0 && returnDays <= 7) {
-        upcomingReturns += 1;
-      }
-
-      const warrantyDays = calculateDaysRemaining(p.warrantyEndDate);
-      if (warrantyDays !== null) {
-        if (warrantyDays >= 0) {
-          activeWarranties += 1;
-        }
-        if (warrantyDays >= 0 && warrantyDays <= 30) {
-          expiringWarranties += 1;
-        }
+        monthlyMap[monthKey] += p.price || 0;
       }
     });
 
-    // Format category spending for Recharts
-    const categorySpending = Object.keys(categoryMap).map((cat) => ({
-      category: cat,
-      amount: Math.round(categoryMap[cat] * 100) / 100
+    // Format monthly trend array for Recharts
+    const monthlySpending = Object.keys(monthlyMap).map((month) => ({
+      month,
+      amount: Math.round(monthlyMap[month])
     }));
 
-    // Format monthly spending for Recharts
-    const monthlySpending = Object.keys(monthlyMap).map((m) => ({
-      month: m,
-      amount: Math.round(monthlyMap[m] * 100) / 100
+    // Format category spending array for Recharts
+    const categorySpending = Object.keys(categoryMap).map((category) => ({
+      category,
+      amount: Math.round(categoryMap[category])
     }));
 
-    // Get 5 most recent purchases with dynamic status
-    const recentPurchases = purchases.slice(0, 5).map((p) => attachDynamicStatus(p));
+    // Take top 6 most recent purchases with dynamic statuses
+    const recentPurchases = purchases.slice(0, 6).map((p) => attachDynamicStatus(p));
 
     res.status(200).json({
       success: true,
       data: {
-        summary: {
-          totalPurchases,
-          totalSpending: Math.round(totalSpending * 100) / 100,
-          activeWarranties,
-          expiringWarranties,
-          upcomingReturns
-        },
-        categorySpending,
+        totalSpend,
+        totalPurchases: purchases.length,
+        activeWarranties,
+        expiringSoonCount,
+        upcomingReturnsCount,
         monthlySpending,
+        categorySpending,
         recentPurchases
       }
     });
@@ -116,12 +122,13 @@ const getDashboardStats = async (req, res, next) => {
 
 /**
  * @route   GET /api/dashboard/upcoming
- * @desc    Get organized list of upcoming return deadlines and warranty expirations
+ * @desc    Get upcoming deadlines prioritized by days remaining
  * @access  Private
  */
 const getUpcomingDeadlines = async (req, res, next) => {
   try {
     const userId = req.user._id;
+
     const purchases = await Purchase.find({ user: userId });
 
     const returnDeadlines = [];
@@ -130,11 +137,8 @@ const getUpcomingDeadlines = async (req, res, next) => {
     purchases.forEach((p) => {
       const enriched = attachDynamicStatus(p);
 
-      // Return deadlines within next 14 days and not closed
-      if (
-        enriched.returnStatus.status === 'open' ||
-        enriched.returnStatus.status === 'approaching'
-      ) {
+      // Returns ending within next 14 days and not yet closed
+      if (enriched.returnStatus.status === 'open' || enriched.returnStatus.status === 'approaching') {
         if (enriched.returnStatus.daysRemaining !== null && enriched.returnStatus.daysRemaining <= 14) {
           returnDeadlines.push(enriched);
         }
@@ -175,10 +179,40 @@ const getUpcomingDeadlines = async (req, res, next) => {
 const triggerRemindersManually = async (req, res, next) => {
   try {
     const result = await checkAndSendReminders();
+
+    // If an SMTP authentication or delivery error occurred during the scan, report it
+    if (result.error) {
+      return res.status(400).json({
+        success: false,
+        message: `Email delivery error: ${result.error}. Please check your Google App Password in .env.`
+      });
+    }
+
+    let testEmailSent = false;
+
+    // If no purchases were in the alert window (<=3d return, <=30d warranty), send a test verification email to confirm delivery!
+    if (result.returnRemindersSent === 0 && result.warrantyRemindersSent === 0) {
+      if (req.user && req.user.email) {
+        const verifyRes = await sendTestVerificationEmail(req.user);
+        if (!verifyRes.success) {
+          return res.status(400).json({
+            success: false,
+            message: `Email delivery failed: ${verifyRes.error || 'SMTP rejected credentials'}. Please verify your Google App Password.`
+          });
+        }
+        testEmailSent = true;
+      }
+    }
+
     res.status(200).json({
       success: true,
-      message: 'Reminder check executed successfully.',
-      result
+      message: testEmailSent
+        ? `No items were in the alert window, so a test verification email was delivered to ${req.user.email}!`
+        : 'Reminder check executed successfully.',
+      result: {
+        ...result,
+        testEmailSent
+      }
     });
   } catch (error) {
     next(error);
