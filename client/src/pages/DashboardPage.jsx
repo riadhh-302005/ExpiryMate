@@ -111,7 +111,16 @@ const DashboardPage = () => {
     );
   }
 
-  const { summary, categorySpending, monthlySpending, recentPurchases } = data || {};
+  const categorySpending = data?.categorySpending || [];
+  const monthlySpending = data?.monthlySpending || [];
+  const recentPurchases = data?.recentPurchases || [];
+  const summary = data?.summary || {
+    totalSpending: data?.totalSpending ?? data?.totalSpend ?? 0,
+    totalItems: data?.totalItems ?? data?.totalPurchases ?? recentPurchases.length,
+    activeWarranties: data?.activeWarranties ?? 0,
+    upcomingReturns: data?.upcomingReturns ?? data?.upcomingReturnsCount ?? 0,
+    expiringWarranties: data?.expiringWarranties ?? data?.expiringSoonCount ?? 0
+  };
   const hasUrgentDeadlines = (summary?.upcomingReturns > 0) || (summary?.expiringWarranties > 0);
 
   return (

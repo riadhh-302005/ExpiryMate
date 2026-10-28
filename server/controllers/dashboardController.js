@@ -102,14 +102,31 @@ const getDashboardStats = async (req, res, next) => {
     // Take top 6 most recent purchases with dynamic statuses
     const recentPurchases = purchases.slice(0, 6).map((p) => attachDynamicStatus(p));
 
+    const summary = {
+      totalSpending: totalSpend,
+      totalSpend,
+      totalItems: purchases.length,
+      totalPurchases: purchases.length,
+      activeWarranties,
+      upcomingReturns: upcomingReturnsCount,
+      upcomingReturnsCount,
+      expiringWarranties: expiringSoonCount,
+      expiringSoonCount
+    };
+
     res.status(200).json({
       success: true,
       data: {
+        summary,
         totalSpend,
+        totalSpending: totalSpend,
         totalPurchases: purchases.length,
+        totalItems: purchases.length,
         activeWarranties,
         expiringSoonCount,
+        expiringWarranties: expiringSoonCount,
         upcomingReturnsCount,
+        upcomingReturns: upcomingReturnsCount,
         monthlySpending,
         categorySpending,
         recentPurchases
