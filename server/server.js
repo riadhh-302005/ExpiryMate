@@ -56,7 +56,7 @@ app.use(
       return callback(null, true);
     },
     credentials: true, // Allow cookies and authorization headers across origins
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD'],
     allowedHeaders: ['Content-Type', 'Authorization']
   })
 );
@@ -69,13 +69,12 @@ app.use(cookieParser());
 // 3. Serve local uploaded receipt files (for dev fallback when Cloudinary is not configured)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// 4. Root & Health check endpoints (Returns 200 OK for uptime pingers, cron-job.org, and browsers)
-app.get(['/', '/health', '/api/health'], (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: 'ExpiryMate API is running smoothly',
-    timestamp: new Date().toISOString()
-  });
+// 4. Root & Health check endpoints (Returns minimal 200 OK for uptime pingers, cron-job.org, and browsers)
+app.all(['/', '/health', '/api/health'], (req, res) => {
+  if (req.method === 'HEAD') {
+    return res.status(200).end();
+  }
+  res.status(200).send('OK');
 });
 
 // 5. Mount API Routes
