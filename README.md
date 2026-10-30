@@ -267,42 +267,6 @@ The repository includes **5 ready-to-use high-resolution receipt images** inside
 
 ---
 
-## 🧠 Key Engineering & Architecture Decisions
-
-1. **Dynamic Countdown Calculation vs. Database Counters**:
-   * *Decision*: Remaining days and status badges are computed on the fly on every request (`server/utils/dateCalculations.js`).
-   * *Why*: Storing a static countdown like `daysLeft: 5` in MongoDB causes data to become stale within 24 hours unless a daily batch update mutates every document. Computing relative to `Date.now()` guarantees 100% accuracy without database write overhead.
-
-2. **HTTP-Only Cookies with Fallback Token Header**:
-   * *Decision*: The backend sets `res.cookie('token', ... { httpOnly: true, secure: true, sameSite: 'none' })` and also returns the token in JSON.
-   * *Why*: HTTP-only cookies cannot be read by malicious JavaScript (`document.cookie`), shielding users from Cross-Site Scripting (XSS) token theft.
-
-3. **Client-Side OCR (Tesseract.js) vs. Cloud OCR API**:
-   * *Decision*: Ran OCR directly in the browser using WebAssembly.
-   * *Why*: Keeps the project 100% free for students, requires zero third-party API billing, and preserves user privacy by keeping unprocessed images local until the user explicitly saves.
-
-4. **Multer Memory Storage for Stream Uploads**:
-   * *Decision*: Process files directly in memory buffer (`multer.memoryStorage()`) rather than saving temporary files to disk before uploading to Cloudinary.
-   * *Why*: Serverless and cloud hosts (like Render free containers) have ephemeral filesystems where disk writes can lead to storage leaks or failures.
-
----
-
-## 🎯 Interview Revision Cheat Sheet
-
-* **Q: How does user data isolation work in ExpiryMate?**  
-  *A: The JWT middleware extracts `req.user.id` from the verified token. In every controller query, we enforce `{ _id: purchaseId, user: req.user.id }`. Even if an attacker guesses another user's purchase ID, the database query returns `null` or 404, preventing IDOR (Insecure Direct Object Reference) vulnerabilities.*
-
-* **Q: How do you prevent duplicate emails from being sent every day?**  
-  *A: The `Purchase` model contains a `remindersSent: { returnDeadline: Boolean, warrantyExpiry: Boolean }` subdocument. Once an email is dispatched, the flag is flipped to `true`. Even if the cron job runs again, already-notified items are excluded from the query.*
-
-* **Q: Why use Recharts instead of Chart.js?**  
-  *A: Recharts is built specifically for React with declarative SVG components (`<BarChart>`, `<PieChart>`, `<Tooltip>`). It fits naturally into the React render lifecycle and scales crisply across mobile and desktop displays without canvas pixelation.*
-
-* **Q: How does CORS work between Vercel and Render?**  
-  *A: Since the frontend is on `vercel.app` and backend is on `onrender.com`, they are different origins. We configured Express `cors()` with `credentials: true` and dynamically reflected the requesting origin so that cross-origin cookies can be received and set securely.*
-
----
-
 ## 📄 License & Author
 
 Built with ❤️ by **[riadhh-302005](https://github.com/riadhh-302005)** as a full-stack engineering portfolio project.
