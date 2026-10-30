@@ -225,48 +225,6 @@ VITE_API_BASE_URL=/api
 
 ---
 
-## 🧾 Sample Test Data & Receipts
-
-The repository includes **5 ready-to-use high-resolution receipt images** inside the [`test-receipts/`](file:///C:/Users/riadh/.gemini/antigravity/scratch/ExpiryMate/test-receipts/) directory:
-
-| File Name | Merchant | Product | Price | Scenario Tested |
-| :--- | :--- | :--- | :--- | :--- |
-| `receipt-01-macbook-apple.png` | Apple Store BKC | MacBook Air M3 | ₹1,24,900.00 | Active 1-Year Warranty |
-| `receipt-02-zara-blazer.png` | Zara Palladium | Wool Tailored Blazer | ₹7,990.00 | Return Deadline Closing (≤3d) |
-| `receipt-03-samsung-tv.png` | Reliance Digital | Samsung 55" 4K UHD TV | ₹43,990.00 | Warranty Expiring Soon (≤30d) |
-| `receipt-04-prestige-cooktop.png` | Amazon Retail India | Prestige Induction Cooktop | ₹2,499.00 | Expired Warranty Record |
-| `receipt-05-oneplus12-croma.png` | Croma Mega Mall | OnePlus 12 5G | ₹64,999.00 | Seed Demo Invoice |
-
----
-
-## 📡 REST API Documentation
-
-### Authentication (`/api/auth`)
-| Method | Endpoint | Description | Access |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/api/auth/register` | Register new user account | Public |
-| `POST` | `/api/auth/login` | Log in and receive HTTP-only cookie + JWT | Public |
-| `POST` | `/api/auth/logout` | Clear HTTP-only auth cookie | Public |
-| `GET` | `/api/auth/me` | Fetch authenticated user profile | Private |
-
-### Purchases (`/api/purchases`)
-| Method | Endpoint | Description | Access |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/api/purchases` | Query purchases (search, category, status, sort) | Private |
-| `POST` | `/api/purchases` | Create new purchase with receipt file upload | Private |
-| `GET` | `/api/purchases/:id` | Get purchase by ID with dynamic countdown data | Private |
-| `PUT` | `/api/purchases/:id` | Update purchase details / replace receipt | Private |
-| `DELETE`| `/api/purchases/:id` | Delete purchase & clean up Cloudinary asset | Private |
-
-### Dashboard & Analytics (`/api/dashboard`)
-| Method | Endpoint | Description | Access |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/api/dashboard/stats` | Aggregate spending totals, category, & 6-month trends | Private |
-| `GET` | `/api/dashboard/upcoming`| Fetch return & warranty deadlines ordered by urgency | Private |
-| `POST`| `/api/dashboard/trigger-reminders`| Manually run reminder scan (on-demand test) | Private |
-
----
-
 ## 📄 License & Author
 
 Built with ❤️ by **[riadhh-302005](https://github.com/riadhh-302005)** as a full-stack engineering portfolio project.
